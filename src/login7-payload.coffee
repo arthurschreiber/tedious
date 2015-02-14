@@ -1,7 +1,7 @@
 WritableTrackingBuffer = require('./tracking-buffer/writable-tracking-buffer')
 require('./buffertools')
 os= require('os')
-sprintf = require('sprintf').sprintf
+sprintf = require('sprintf-js').sprintf
 libraryName = require('./library').name
 versions = require('./tds-versions').versions
 

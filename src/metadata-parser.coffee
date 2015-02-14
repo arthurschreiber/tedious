@@ -1,7 +1,7 @@
 codepageByLcid = require('./collation').codepageByLcid
 
 TYPE = require('./data-type').TYPE
-sprintf = require('sprintf').sprintf
+sprintf = require('sprintf-js').sprintf
 
 parse = (buffer, options) ->
   if options.tdsVersion < "7_2"

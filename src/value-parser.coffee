@@ -1,5 +1,5 @@
 iconv = require('iconv-lite')
-sprintf = require('sprintf').sprintf
+sprintf = require('sprintf-js').sprintf
 guidParser = require('./guid-parser')
 require('./buffertools')
 

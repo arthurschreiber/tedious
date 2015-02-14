@@ -1,7 +1,7 @@
 # s2.2.7.13 (introduced in TDS 7.3.B)
 
 valueParse = require('../value-parser')
-sprintf = require('sprintf').sprintf
+sprintf = require('sprintf-js').sprintf
 
 parser = (buffer, columnsMetaData, options) ->
   length = Math.ceil columnsMetaData.length / 8

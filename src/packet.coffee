@@ -1,5 +1,5 @@
 require('./buffertools')
-sprintf = require('sprintf').sprintf
+sprintf = require('sprintf-js').sprintf
 
 HEADER_LENGTH = 8
 

@@ -1,4 +1,4 @@
-sprintf = require('sprintf').sprintf
+sprintf = require('sprintf-js').sprintf
 WritableTrackingBuffer = require('./tracking-buffer/tracking-buffer').WritableTrackingBuffer
 
 optionBufferSize = 20

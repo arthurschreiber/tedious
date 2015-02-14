@@ -1,7 +1,7 @@
 # s2.2.7.17
 
 valueParse = require('../value-parser')
-sprintf = require('sprintf').sprintf
+sprintf = require('sprintf-js').sprintf
 
 parser = (buffer, columnsMetaData, options) ->
   columns = if options.useColumnNames then {} else []
