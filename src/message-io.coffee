@@ -6,6 +6,8 @@ packetHeaderLength = require('./packet').HEADER_LENGTH
 Packet = require('./packet').Packet
 TYPE = require('./packet').TYPE
 
+Concentrate = require('concentrate')
+
 class MessageIO extends EventEmitter
   constructor: (@socket, @_packetSize, @debug) ->
     @socket.addListener('data', @eventData)
@@ -85,21 +87,34 @@ class MessageIO extends EventEmitter
       packet.packetId = packetNumber + 1
       packet.data = packetPayload
 
-      @sendPacket(packet, packetType)
+      @sendPacket(packet)
 
-  sendPacket: (packet, packetType) =>
-    @logPacket('Sent', packet);
+  sendPacket: (packet) =>
+    @logPacket('Sent', packet)
 
-    if @tlsNegotiationInProgress && packetType != TYPE.PRELOGIN
+    targetStream = if @tlsNegotiationInProgress && packet.type != TYPE.PRELOGIN
       # LOGIN7 packet.
       #   Something written to cleartext stream will initiate TLS handshake.
       #   Will not emerge from the encrypted stream until after negotiation has completed.
-      @securePair.cleartext.write(packet.buffer)
+      @securePair.cleartext
+    else if @securePair && !@tlsNegotiationInProgress
+      @securePair.cleartext
     else
-      if (@securePair && !@tlsNegotiationInProgress)
-        @securePair.cleartext.write(packet.buffer)
-      else
-        @socket.write(packet.buffer)
+      @socket
+
+    c = new Concentrate()
+    c.pipe(targetStream)
+
+    c.uint8(packet.type)
+    c.uint8(packet.status)
+    c.uint16be(packet.length)
+    c.uint16be(packet.spid)
+    c.uint8(packet.packetId)
+    c.uint8(packet.window)
+    c.flush()
+    c.buffer(packet.data)
+    c.flush()
+    c.unpipe()
 
   logPacket: (direction, packet) ->
     @debug.packet(direction, packet)

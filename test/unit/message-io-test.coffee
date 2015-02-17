@@ -2,17 +2,36 @@ Debug = require('../../src/debug')
 EventEmitter = require('events').EventEmitter
 require('../../src/buffertools')
 MessageIO = require('../../src/message-io')
-Packet = require('../../src/packet').Packet
+{Packet, isPacketComplete, packetLength} = require('../../src/packet')
 require('../../src/buffertools')
 
-class Connection extends EventEmitter
+Writable = require("stream").Writable
+
+class Connection extends Writable
+  constructor: ->
+    @buffer = new Buffer(0)
+    super()
+
   setTimeout: ->
 
   connect: ->
 
-  write: (data) ->
-    packet = Packet.fromBuffer(data)
-    @emit('packet', packet)
+  _write: (chunk, encoding, done) ->
+    @buffer = Buffer.concat([@buffer, chunk])
+
+    console.log(@buffer, isPacketComplete(@buffer), packetLength(@buffer))
+
+    while isPacketComplete(@buffer)
+      data = @buffer.slice(0, packetLength(@buffer))
+
+      console.log(data)
+
+      packet = Packet.fromBuffer(data)
+      @emit('packet', packet)
+
+      @buffer = @buffer.slice(packetLength(@buffer))
+
+    done()
 
 packetType = 2
 packetSize = 8 + 4
