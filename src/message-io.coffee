@@ -4,6 +4,7 @@ isPacketComplete = require('./packet').isPacketComplete
 packetLength = require('./packet').packetLength
 packetHeaderLength = require('./packet').HEADER_LENGTH
 Packet = require('./packet').Packet
+PacketStream = require('./packet-stream')
 TYPE = require('./packet').TYPE
 
 Concentrate = require('concentrate')
@@ -57,64 +58,34 @@ class MessageIO extends EventEmitter
     @socket.removeAllListeners('data')
     @securePair.encrypted.removeAllListeners('data')
 
+    @securePair.cleartext.addListener('data', @eventData)
+
     @socket.pipe(@securePair.encrypted)
     @securePair.encrypted.pipe(@socket)
-
-    @securePair.cleartext.addListener('data', @eventData)
 
     @tlsNegotiationInProgress = false;
 
   # TODO listen for 'drain' event when socket.write returns false.
   # TODO implement incomplete request cancelation (2.2.1.6)
   sendMessage: (packetType, data, resetConnection) ->
-    if data
-      numberOfPackets = (Math.floor((data.length - 1) / @packetDataSize)) + 1
-    else
-      numberOfPackets = 1
-      data = new Buffer 0
-
-    for packetNumber in [0..numberOfPackets - 1]
-      payloadStart = packetNumber * @packetDataSize
-      if packetNumber < numberOfPackets - 1
-        payloadEnd = payloadStart + @packetDataSize
-      else
-        payloadEnd = data.length
-      packetPayload = data.slice(payloadStart, payloadEnd)
-
-      packet = new Packet(packetType)
-      packet.last = packetNumber == numberOfPackets - 1
-      packet.resetConnection = true if resetConnection
-      packet.packetId = packetNumber + 1
-      packet.data = packetPayload
-
-      @sendPacket(packet)
-
-  sendPacket: (packet) =>
-    @logPacket('Sent', packet)
-
-    targetStream = if @tlsNegotiationInProgress && packet.type != TYPE.PRELOGIN
+    stream = if @tlsNegotiationInProgress && packetType != TYPE.PRELOGIN
       # LOGIN7 packet.
       #   Something written to cleartext stream will initiate TLS handshake.
       #   Will not emerge from the encrypted stream until after negotiation has completed.
       @securePair.cleartext
-    else if @securePair && !@tlsNegotiationInProgress
-      @securePair.cleartext
     else
-      @socket
+      if (@securePair && !@tlsNegotiationInProgress)
+        @securePair.cleartext
+      else
+        @socket
 
-    c = new Concentrate()
-    c.pipe(targetStream)
-
-    c.uint8(packet.type)
-    c.uint8(packet.status)
-    c.uint16be(packet.length)
-    c.uint16be(packet.spid)
-    c.uint8(packet.packetId)
-    c.uint8(packet.window)
-    c.flush()
-    c.buffer(packet.data)
-    c.flush()
-    c.unpipe()
+    ps = new PacketStream
+      type: packetType
+      resetConnection: resetConnection
+      packetSize: @_packetSize
+    ps.pipe(stream, { end: false })
+    ps.write(data)
+    ps.end()
 
   logPacket: (direction, packet) ->
     @debug.packet(direction, packet)
