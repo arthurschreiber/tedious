@@ -8,5 +8,9 @@ deploy:
   email: "schreiber.arthur@googlemail.com"
   api_key:
     secure: bsf8+yRHbphPCaP6w0Fqg66zOEyBss/XGpKqSiESrBI4cbIPAKKvUL/SFzibKqRV6mtYYJGmwRSaS4okhwSeCvi0hnHqAMBQQs863eatoUNbTTrGfH5EB97jaqkcdpCCvtup2Uqu+GcHXRgW1HsQ51jAntfY5DAazVsuRCTNNHI=
-  on:
-    tags: true
+
+before_deploy:
+  - if [ "$TRAVIS_TAG" == "" ]; then
+  -   export NPM_CONFIG_TAG="unstable"
+  -   npm version $(git describe HEAD)
+  - fi
